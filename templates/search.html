@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Food Search
+{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+    body {
+        padding-top: 25vh; /* 네비게이션 바 높이 만큼 여백 추가 */
+    }
+.centered-image {
+        display: block;
+        margin: 0 auto;
+        margin-left: -100px; /* 이미지를 왼쪽으로 20px 이동 */
+        width: 800px; /* 이미지의 너비를 200px로 조정 */
+        height: auto; /* 높이를 자동으로 조정하여 비율 유지 */
+    }
+    /* 검색 바의 크기를 조정하는 스타일 */
+    #search-bar {
+        width: 600px; /* 원하는 너비로 조절 */
+        height: 60px; /* 원하는 높이로 조절 */
+        font-size: 25px; /* 글꼴 크기 조절 */
+    }
+
+</style>
+
+
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <img src="../static/image/logo_search.jpg" alt="음식 검색" class="centered-image">
+            <input type="text" id="search-bar" class="form-control" placeholder="음식을 검색하세요...">
+        </div>
+    </div>
+</div>
+{% endblock %}

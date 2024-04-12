@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}음식 분류 - 이미지 디스플레이{% endblock %}
+
+{% block head %}
+<style>
+    body {
+        padding-top: 30vh; /* 네비게이션 바 높이 만큼 여백 추가 */
+    }
+    h2 {
+        text-align: center; /* 제목 가운데 정렬 */
+        margin-bottom: 20px; /* 폼과의 간격 조정 */
+    }
+    .centered-image {
+        margin: 0 auto;
+        width: 100%; /* 이미지의 너비를 화면 너비에 맞게 조정 */
+        max-width: 800px; /* 이미지의 최대 너비를 설정 */
+        height: auto; /* 높이를 자동으로 조정하여 비율 유지 */
+        margin-left: 13%
+    }
+    form {
+        max-width: 400px; /* 이미지 업로드 박스의 최대 너비를 조정 */
+        margin: auto;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        background-color: #f9f9f9; /* 폼 배경색 설정 */
+    }
+    .form-group {
+        margin-bottom: 5px;
+        display: flex;
+        justify-content: space-between;
+    }
+    label {
+        display: block;
+        margin-bottom: 5px;
+    }
+    input[type="file"] {
+        width: calc(70% - 10px); /* 파일 입력 필드의 너비 조정 (여백 고려) */
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box; /* 입력 필드의 패딩을 너비에 포함 */
+    }
+    input[type="submit"] {
+        width: 100px; /* 버튼의 고정 너비 설정 */
+        padding: 10px;
+        background-color: #4CAF50; /* 버튼 색상 일관성 유지 */
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    input[type="submit"]:hover {
+        background-color: #45a049;
+    }
+    p {
+        text-align: center;
+        color: #dc3545; /* 메시지 색상 설정 */
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <img src="../static/image/logo_upload.jpg" alt="음식 검색" class="centered-image">
+        <br><br>
+        <form action="" method="post" enctype="multipart/form-data">
+            <div class="form-group" style="display: flex;">
+                <input type="file" id="file" name="file">
+                <input type="submit" value="업로드">
+            </div>
+        </form>
+    </div>
+{% endblock %}

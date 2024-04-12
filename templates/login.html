@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block title %}음식 분류 - 이미지 디스플레이{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+    body {
+        padding-top: 28vh; /* 네비게이션 바 높이 만큼 여백 추가 */
+    }
+    h2 {
+        text-align: center; /* 제목 가운데 정렬 */
+        margin-bottom: 20px; /* 폼과의 간격 조정 */
+    }
+    form {
+        max-width: 300px;
+        margin: auto;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .form-group {
+        margin-bottom: 20px;
+    }
+    label {
+        display: block;
+        margin-bottom: 5px;
+    }
+    input[type="text"],
+    input[type="password"] {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box; /* 입력 필드의 패딩을 너비에 포함 */
+    }
+    button {
+        width: 100%;
+        padding: 10px;
+        background-color: #4CAF50; /* 버튼 색상 일관성 유지 */
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    button:hover {
+        background-color: #45a049;
+    }
+    p {
+        text-align: center;
+        color: #dc3545; /* 메시지 색상 설정 */
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <h2>로그인</h2>
+    <form method="POST">
+        <div class="form-group">
+            <label for="username">사용자 이름:</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+        <div class="form-group">
+            <label for="password">비밀번호:</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <button type="submit">로그인</button>
+    </form>
+    {% for message in get_flashed_messages(category_filter=["success", "danger"]) %}
+    <p>{{ message }}</p>
+    {% endfor %}
+{% endblock %}

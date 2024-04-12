@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block title %}음식 분류 - 이미지 디스플레이{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+    body {
+        padding-top: 12vh; /* 네비게이션 바 높이 만큼 여백 추가 */
+    }
+    h2 {
+        text-align: center; /* 제목 가운데 정렬 */
+        margin-bottom: 20px; /* 폼과의 간격 조정 */
+    }
+    form {
+        max-width: 300px;
+        margin: auto;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .form-group {
+        margin-bottom: 20px;
+    }
+    label {
+        display: block;
+        margin-bottom: 5px;
+    }
+    input[type="text"],
+    input[type="password"],
+    input[type="email"],
+    input[type="number"],
+    select {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box; /* 입력 필드의 패딩을 너비에 포함 */
+    }
+    button {
+        width: 100%;
+        padding: 10px;
+        background-color: #4CAF50; /* 버튼 색상 일관성 유지 */
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    button:hover {
+        background-color: #45a049;
+    }
+    p {
+        text-align: center;
+        color: #dc3545; /* 메시지 색상 설정 */
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <h2>회원가입</h2>
+<br><br>
+    <form method="POST" action="{{ url_for('signup') }}">
+        <div class="form-group">
+            <label for="username">사용자 이름:</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+        <div class="form-group">
+            <label for="password">비밀번호:</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <div class="form-group">
+            <label for="email">이메일:</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+        <div class="form-group">
+            <label for="weight">현재 체중(kg):</label>
+            <input type="text" id="weight" name="weight" required>
+        </div>
+        <div class="form-group">
+            <label for="target_weight">목표 체중(kg):</label>
+            <input type="text" id="target_weight" name="target_weight" required>
+        </div>
+        <div class="form-group">
+            <label for="gender">성별:</label>
+            <select id="gender" name="gender" required>
+                <option value="male">남성</option>
+                <option value="female">여성</option>
+                <option value="other">기타</option>
+            </select>
+        </div>
+        <button type="submit">회원가입</button>
+    </form>
+    {% for message in get_flashed_messages(category_filter=["success", "danger"]) %}
+    <p>{{ message }}</p>
+    {% endfor %}
+{% endblock %}
