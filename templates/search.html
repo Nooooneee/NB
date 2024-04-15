@@ -6,6 +6,7 @@ Food Search
 
 {% block head %}
 {{ super() }}
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
 <style>
     body {
         padding-top: 25vh; /* 네비게이션 바 높이 만큼 여백 추가 */
@@ -26,7 +27,6 @@ Food Search
 
 </style>
 
-
 {% endblock %}
 
 {% block content %}
@@ -34,8 +34,30 @@ Food Search
     <div class="row justify-content-center">
         <div class="col-md-6">
             <img src="../static/image/logo_search.jpg" alt="음식 검색" class="centered-image">
-            <input type="text" id="search-bar" class="form-control" placeholder="음식을 검색하세요...">
+             <form action="{{ url_for('search') }}" method="post">
+                <input type="text" id="search-bar" name="food_name" class="form-control" placeholder="음식을 검색하세요..." required>
+                <button type="submit" class="btn btn-primary mt-2">검색</button>
+             </form>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+<script>
+$(function() {
+    $("#search-bar").autocomplete({
+        source: function(request, response) {
+            $.getJSON("{{ url_for('autocomplete') }}", { term: request.term }, response);
+        },
+        minLength: 1,
+        select: function(event, ui) {
+            this.value = ui.item.value;
+            return false;
+        }
+    });
+});
+</script>
 {% endblock %}

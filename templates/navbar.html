@@ -14,20 +14,26 @@
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ml-auto">
-            <li class="nav-item">
-                <a class="nav-link" href="/">홈</a>
-            </li>
             {% if 'loggedin' in session %}
-            <li class="nav-item">
-                <a class="nav-link" href="/logout">로그아웃</a>
-            </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/">홈</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/logout">로그아웃</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/nutrition">영양소 관리</a>
+                </li>
             {% else %}
-            <li class="nav-item">
-                <a class="nav-link" href="/login">로그인</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="/signup">회원가입</a>
-            </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/">홈</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/login">로그인</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/signup">회원가입</a>
+                </li>
             {% endif %}
         </ul>
     </div>

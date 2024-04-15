@@ -83,3 +83,36 @@ def search_food(cursor, foodname):
         return search_results
     else:
         return None
+
+def calculate_nutrient_totals(food_intakes, cursor):
+    RDA = {'kcal': 2500, 'carbohydrate': 320, 'protein': 52.5, 'fat': 44.5,
+           'sugars': 25, 'salt': 2000, 'coles': 300, 'mag': 315, 'calcium': 700, 'iron': 12}
+    nutrient_sums = {key: 0 for key in RDA}  # Initialize sums
+
+    for intake in food_intakes:
+        cursor.execute('SELECT * FROM food_info_2 WHERE name = %s', (intake['food_name'],))
+        food_info = cursor.fetchone()
+        if food_info:
+            for nutrient, value in food_info.items():
+                if nutrient in nutrient_sums:
+                    nutrient_sums[nutrient] += value
+
+    nutrient_totals = []
+    for nutrient, total in nutrient_sums.items():
+        percent = (total / RDA[nutrient] * 100) if RDA[nutrient] != 0 else 0
+        nutrient_totals.append({'name': nutrient, 'percent': round(percent)})
+    nutrient_map = {
+        'kcal': '칼로리',
+        'carbohydrate': '탄수화물',
+        'protein': '단백질',
+        'fat': '지방',
+        'sugars': '설탕',
+        'salt': '나트륨',
+        'coles': '콜레스테롤',
+        'mag': '마그네슘',
+        'calcium': '칼슘',
+        'iron': '철'
+    }
+    for nutrient in nutrient_totals:
+        nutrient['korean_name'] = nutrient_map[nutrient['name']]
+    return nutrient_totals

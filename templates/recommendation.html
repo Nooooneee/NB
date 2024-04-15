@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block title %}영양소 추천{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+    .progress-bar-container {
+        background-color: #e0e0e0;
+        border-radius: 10px;
+        margin: 10px 0;
+        position: relative;
+    }
+    .progress-bar {
+        height: 20px;
+        border-radius: 10px;
+        position: relative;
+    }
+    .progress-bar.green {
+        background-color: #4caf50;
+    }
+    .progress-bar.orange {
+        background-color: #ff9800;
+    }
+    .progress-bar.red {
+        background-color: #f44336;
+    }
+    .progress-percentage {
+        position: absolute;
+        right: 5px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: white;
+    }
+    .nutrition-label {
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>영양소 추천 결과</h1>
+    <h2>섭취한 영양소와 추천 음식의 영양소 합</h2>
+    {% for nutrient_name, value in zip(nutrient_names, current_intake.values()) %}
+        {% set rda_percent = (value / rda_values[loop.index0] * 100) | round %}
+        {% set bar_width = rda_percent if rda_percent <= 100 else 100 %}
+        <div class="nutrition-item">
+            <div class="nutrition-label">{{ nutrient_name }}</div>
+            <div class="progress-bar-container">
+                <div class="progress-bar
+                    {{ 'red' if rda_percent > 150 else
+                    'orange' if rda_percent > 100 else
+                    'green' }}"
+                    style="width: {{ bar_width }}%;">
+                    <span class="progress-percentage">{{ rda_percent }}%</span>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

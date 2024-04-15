@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+
+{% block title %}음식 분류 - 이미지 디스플레이{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+        body {
+        font-family: 'Arial', sans-serif;
+        background-color: #f4f4f4;
+        color: #333;
+        margin: 0;
+        padding-top: 4%;
+        line-height: 1.6;
+    }
+    .container {
+        max-width: 65%;
+        margin: auto;
+        overflow: hidden;
+        padding: 20px;
+    }
+    .content {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-around;
+        align-items: flex-start;
+        width: 100%;
+    }
+    @media (max-width: 900px) {
+        .content {
+            flex-direction: column;
+        }
+    }
+    .nutrition-info, .image-container {
+        width: 100%;
+        margin: 10px;
+    }
+    .nutrition-item {
+        margin-bottom: 20px;
+    }
+    .progress-container {
+        background-color: #e0e0e0;
+        border-radius: 10px;
+        position: relative;
+        margin-top: 0;
+        margin-bottom: 15px;
+        height: 17px;
+        overflow: hidden;
+    }
+
+
+    .progress-bar {
+        height: 100%;
+        border-radius: 10px;
+        position: relative;
+        background-color: #4caf50; /* Default green */
+        transition: width 0.4s ease;
+        white-space: nowrap;
+        color: white;
+        text-align: right;
+        padding-right: 5px;
+    }
+    .progress-bar.orange {
+        background-color: #ff9800;
+    }
+    .progress-bar.red {
+        background-color: #f44336;
+    }
+
+    .progress-percentage {
+    position: absolute;
+    font-size: 14px;
+    right: 5px; /* 오른쪽 여백 */
+    top: 50%; /* 세로 위치 중앙 조정 */
+    transform: translateY(-50%); /* Y축 기준으로 상위 요소의 중앙 */
+    color: black; /* 텍스트 색상 */
+    background: none; /* 배경색 없음 */
+}
+
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        table, th, td {
+            border: 1px solid #ccc;
+        }
+        th {
+            background-color: #efefef;
+            color: #333;
+            padding: 10px;
+        }
+        td {
+            padding: 10px;
+            color: #333;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        a {
+            color: #333;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        h1, h2 {
+            color: #333;
+        }
+    </style>
+<script>
+function submitAddFoodForm() {
+    // h1 태그에서 음식 이름 가져오기
+    var foodName = document.getElementById('foodName').textContent;
+    // 폼의 hidden 인풋 필드에 음식 이름 설정
+    document.getElementById('foodNameInput').value = foodName;
+    // 폼 제출
+    document.getElementById('addFoodForm').submit();
+}
+</script>
+{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <div class="title-container" style="display: flex; justify-content: space-between; align-items: center;">
+                    <h1 id="foodName">{{ data['name'] }}</h1>
+                    <form id="addFoodForm" action="{{ url_for('add_food') }}" method="post" style="display: none;">
+                        <input type="hidden" name="food_name" id="foodNameInput">
+                    </form>
+                    <button type="button" class="btn btn-success" onclick="submitAddFoodForm()">먹은 음식 추가</button>
+                </div>
+        <div class="content">
+
+            <!-- 영양 정보 -->
+            <div class="nutrition-info">
+                <!-- 각 영양소에 대한 프로그레스 바 -->
+                <h5 style="text-align: right;">일일 권장 섭취량(%)</h5>
+                <!-- 영양소에 대한 프로그레스 바를 반복하여 표시 -->
+                {% for nutrient in [
+    ('kcal', '칼로리'), ('carbohydrate', '탄수화물'), ('protein', '단백질'),
+    ('fat', '지방'), ('sugars', '설탕'), ('salt', '나트륨'),
+    ('coles', '콜레스테롤'), ('mag', '마그네슘'), ('calcium', '칼슘'), ('iron', '철')
+] %}
+    {% set nutrient_key = nutrient[0] %}
+    {% set nutrient_value = data[nutrient_key] %}
+    {% set rda_percent = (nutrient_value / RDA[loop.index0] * 100) | round %}
+    {% set bar_width = rda_percent if rda_percent <= 100 else 100 %}
+    <div class="nutrition-item">
+        <label>{{ nutrient[1] }}</label>
+        <div class="progress-container">
+            <div class="progress-bar
+                {{ 'red' if rda_percent > 100 else
+                   'orange' if rda_percent >= 50 else 'green' }}"
+                 style="width: {{ bar_width }}%;">
+            </div>
+            <span class="progress-percentage">{{ rda_percent }}%</span>
+        </div>
+    </div>
+{% endfor %}
+
+
+            </div>
+        </div>
+        <h2>영양 정보</h2>
+        <div class="table-responsive">
+            <table class="table">
+            <!--<tr><th>항목</th><th>값</th><th>일일 권장 섭취량</th></tr>!-->
+            <tr><td>1회 제공량</td><td>{{ data['serving_size'] }}g</td></tr>
+            <tr><td>칼로리</td><td>{{ data['kcal'] }} kcal</td><td>{{ (data['kcal'] / RDA[0] * 100) | round(2) }}%</td></tr>
+            <tr><td>탄수화물</td><td>{{ data['carbohydrate'] }}g</td><td>{{ (data['carbohydrate'] / RDA[1] * 100) | round(2) }}%</td></tr>
+            <tr><td>단백질</td><td>{{ data['protein'] }}g</td><td>{{ (data['protein'] / RDA[2] * 100) | round(2) }}%</td></tr>
+            <tr><td>지방</td><td>{{ data['fat'] }}g</td><td>{{ (data['fat'] / RDA[3] * 100) | round(2) }}%</td></tr>
+            <tr><td>포화 지방</td><td>{{ data['satu_fat'] }}g</td></tr>
+            <tr><td>설탕</td><td>{{ data['sugars'] }}g</td><td>{{ (data['sugars'] / RDA[4] * 100) | round(2) }}%</td></tr>
+            <tr><td>나트륨</td><td>{{ data['salt'] }}mg</td><td>{{ (data['salt'] / RDA[5] * 100) | round(2) }}%</td></tr>
+            <tr><td>콜레스테롤</td><td>{{ data['coles'] }}mg</td><td>{{ (data['coles'] / RDA[6] * 100) | round(2) }}%</td></tr>
+            <tr><td>식이섬유</td><td>{{ data['Fiber'] }}g</td></tr>
+            <tr><td>마그네슘</td><td>{{ data['mag'] }}mg</td><td>{{ (data['mag'] / RDA[7] * 100) | round(2) }}%</td></tr>
+            <tr><td>칼슘</td><td>{{ data['calcium'] }}mg</td><td>{{ (data['calcium'] / RDA[8] * 100) | round(2) }}%</td></tr>
+            <tr><td>철분</td><td>{{ data['iron'] }}mg</td><td>{{ (data['iron'] / RDA[9] * 100) | round(2) }}%</td></tr>
+
+            </table>
+        </div>
+        <a href="/upload">이전 페이지</a>
+    </div>
+{% endblock %}

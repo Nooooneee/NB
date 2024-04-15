@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+
+{% block title %}영양 정보{% endblock %}
+
+{% block head %}
+{{ super() }}
+<!-- 추가 스타일 -->
+<style>
+    .food-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+        padding: 10px;
+        background-color: #fff; /* 배경색 추가 */
+        border-radius: 5px; /* 경계선 둥글게 설정 */
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* 그림자 효과 */
+    }
+    .food-header {
+        padding: 10px 10px;
+        font-weight: bold;
+        background-color: #f4f4f4; /* 헤더 배경색 */
+        margin-bottom: 10px; /* 헤더와 리스트 사이의 여백 */
+        display: flex;
+    }
+    .food-name {
+        flex: 3; /* 음식명에 더 많은 공간 할당 */
+    }
+    .food-time {
+        flex: 1; /* 시간에 할당되는 공간 */
+        padding-right: 10px; /* 우측 여백 추가 */
+    }
+    .amount-dropdown {
+        flex: 1; /* 드롭다운에 할당되는 공간 */
+        text-align: center;
+    }
+    .delete-btn {
+        margin-left: 10px; /* 삭제 버튼의 왼쪽 여백 */
+        flex-shrink: 0; /* 삭제 버튼을 고정 너비로 유지 */
+    }
+    .amount-dropdown select {
+        width: 7em; /* 드롭다운 너비 제한 */
+    }
+    .food-header, .food-item {
+        display: flex;
+        justify-content: flex-start; /* 항목들을 왼쪽으로 정렬합니다. */
+    }
+    .food-name {
+        flex: 3; /* 음식 이름에 더 많은 공간을 할당합니다. */
+    }
+    .food-time {
+        flex: 2; /* 먹은 시간에 더 적은 공간을 할당합니다. */
+        padding-right: 20px; /* 우측 여백을 추가하여 간격을 만듭니다. */
+    }
+    .amount-dropdown {
+        flex: 1; /* 먹은 양에 필요한 공간을 줄입니다. */
+        padding-right: 20px; /* 이것도 우측 여백을 추가하여 간격을 만듭니다. */
+    }
+    .empty-space {
+        flex:0.3;
+    }
+    .delete-btn {
+        flex: 1;
+        /* 삭제 버튼 스타일은 그대로 유지합니다. */
+    }
+
+    .food-intake-container {
+        display: flex;
+    }
+    .intake-list {
+        width: 50%; /* 음식 목록 부분은 왼쪽에 50% 차지 */
+        padding-right: 30px;
+    }
+    .nutrition-summary {
+        width: 50%; /* 프로그레스바 부분은 오른쪽에 50% 차지 */
+    }
+
+    .progress-bar-container {
+        margin-bottom: 15px; /* 프로그레스바 사이의 여백을 조절 */
+        padding: 0; /* 내부 여백 제거 */
+    }
+    .progress-bar-area {
+        background-color: #e0e0e0;
+        border-radius: 10px;
+        height: 18px; /* 프로그레스 바 높이 설정 */
+        position: relative; /* 상대 위치 설정 */
+        overflow: hidden; /* 내용이 넘칠 경우 숨김 처리 */
+    }
+    .progress-bar {
+        height: 100%;
+        border-radius: 10px;
+        transition: width 0.4s ease; /* 부드러운 전환 효과 */
+    }
+    .progress-green {
+    background-color: #4caf50; /* 초록색 */
+}
+    .progress-orange {
+        background-color: #ff9800; /* 주황색 */
+    }
+    .progress-red {
+        background-color: #f44336; /* 빨간색 */
+    }
+    .progress-bar-label {
+        font-size: 0.9em;
+        color: #333; /* 라벨 색상 설정 */
+        margin-bottom: 5px; /* 라벨과 프로그레스 바 사이 간격 */
+    }
+    .progress-percentage-label {
+        position: absolute;
+        top: 50%;
+        right: 5px;
+        transform: translateY(-50%); /* 중앙 정렬 */
+        color: black; /* 텍스트 색상 검정 */
+        z-index: 1; /* 텍스트가 프로그레스바 위에 보이도록 설정 */
+    }
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>음식 정보</h1>
+    <form action="{{ url_for('nutrition') }}" method="post" class="mb-3">
+        <div class="form-group">
+            <label for="date">날짜 선택:</label>
+            <input type="date" id="date" name="selected_date" class="form-control" value="{{ selected_date | default(today_date) }}">
+            <input type="submit" class="btn btn-primary mt-2" value="조회">
+        </div>
+    </form>
+
+    {% if food_intakes %}
+    <div class="food-intake-container">
+        <div class="intake-list">
+
+        <div class="food-header">
+            <div class="food-name">음식 이름</div>
+            <div class="food-time">등록 시간</div>
+            <!--<div class="amount-dropdown">먹은 양(%)</div> !-->
+            <div class="empty-space"></div>
+            <div class="delete-btn"></div>
+        </div>
+
+        <div class="list-group">
+            {% for intake in food_intakes %}
+                <div class="list-group-item food-item">
+                    <div class="food-name">{{ intake.food_name }}</div>
+                    <div class="food-time">{{ intake.created_at.strftime('%H:%M') }}</div>
+                    <!--
+                    <div class="amount-dropdown">
+                        <select id="amountSelect{{ intake.id }}" class="form-control">
+                            {% for i in range(1, 11) %}
+                                <option value="{{ i * 10 }}" {% if i == 10 %}selected{% endif %}>{{ i * 10 }}%</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    !-->
+                    <button type="button" class="btn btn-danger delete-btn" onclick="deleteFoodIntake('{{ intake.id }}')">삭제</button>
+                </div>
+            {% endfor %}
+            </div>
+            </div>
+            <div class="nutrition-summary">
+            <h4>일일 영양소 섭취량</h4>
+            {% for nutrient in nutrient_totals %}
+            <div class="progress-bar-container">
+                <div class="progress-bar-label">{{ nutrient.korean_name }}</div>
+                <div class="progress-bar-area">
+                    <div class="progress-bar {{ 'progress-red' if nutrient.percent > 120 else 'progress-green' if nutrient.percent > 80 else 'progress-orange' }}" style="width: {{ nutrient.percent }}%;">
+                        <span class="progress-percentage-label">{{ nutrient.percent }}%</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        </div>
+    {% else %}
+        <p>선택한 날짜에 대한 음식 섭취 기록이 없습니다.</p>
+    {% endif %}
+</div>
+<script>
+    function deleteFoodIntake(intakeId) {
+        if (confirm('이 음식을 삭제하시겠습니까?')) {
+            // 삭제 처리를 위한 서버의 라우트로 POST 요청 보내기
+            fetch('{{ url_for('delete_food_intake') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ intake_id: intakeId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.success) {
+                    // 삭제가 성공적으로 이루어졌을 때 페이지 새로고침 또는 리스트에서 해당 항목 제거
+                    alert('음식이 삭제되었습니다.');
+                    location.reload();  // 간단한 예시로 페이지를 새로고침합니다.
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    }
+</script>
+{% endblock %}

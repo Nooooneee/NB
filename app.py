@@ -1,18 +1,30 @@
 from flask import Flask, flash, redirect, send_from_directory, url_for, render_template, session, request, jsonify
 from config import Config
 from flask_mysqldb import MySQL
-from utils import save_image, allowed_file, fc_load_model, predict_image, get_data_from_db, add_user_to_db, validate_login, search_food
+from utils import save_image, allowed_file, fc_load_model, predict_image, get_data_from_db, add_user_to_db, validate_login, calculate_nutrient_totals
 import os
 import MySQLdb.cursors
+import pandas as pd
+import numpy as np
+import logging
+stream_handler = logging.StreamHandler()
+stream_handler.setLevel(logging.DEBUG)
+
 
 app = Flask(__name__)
 app.config.from_object(Config)
 # MySQL 설정
 mysql = MySQL(app)
 
+app.logger.addHandler(stream_handler)
+
 # Windows 환경에서의 상대 경로 설정
 app.config['UPLOAD_FOLDER'] = './static/uploads'
 model = fc_load_model(Config.MODEL_PATH)
+
+# zip 함수를 Jinja 환경의 전역 변수로 추가
+app.jinja_env.globals.update(zip=zip)
+
 
 @app.route('/')
 def home():
@@ -21,24 +33,27 @@ def home():
 @app.route('/search', methods=['GET', 'POST'])
 def search():
     if request.method == 'POST':
-        pass
-    # 음식 검색 기능을 처리하는 코드
+        food_name = request.form['food_name']
+        data = get_data_from_db(food_name, mysql)
+        if data:
+            data_dict = data[0]  # 데이터가 있으면 첫 번째 결과를 사용
+            return render_template('search_result.html', data=data_dict, RDA=Config.RDA)
+        else:
+            flash('검색된 음식이 없습니다.', 'warning')
+            return redirect(url_for('search'))
     return render_template('search.html')
 
 
 @app.route('/autocomplete', methods=['GET'])
 def autocomplete():
-    name = request.args.get('term')
+    search = request.args.get('term')
     cursor = mysql.connection.cursor()
-    try:
-        success = search_food(cursor, name)
+    query = f"SELECT name FROM food_info_2 WHERE name LIKE '%{search}%' LIMIT 5"
+    cursor.execute(query)
+    results = cursor.fetchall()
+    suggestions = [result['name'] for result in results]
+    return jsonify(suggestions)
 
-        if success:
-            return jsonify(success)
-        else:
-            return None
-    finally:
-        cursor.close()  # 커서 닫기
 
 
 @app.route('/uploads/<filename>')
@@ -67,6 +82,32 @@ def upload_file():
             flash('Invalid file or file type')
         return redirect('/upload')
     return render_template('upload_form.html')
+
+@app.route('/add_food', methods=['POST'])
+def add_food():
+    if 'loggedin' not in session:
+        # 사용자가 로그인하지 않은 경우 로그인 페이지로 리디렉션
+        flash("로그인이 필요한 기능입니다.", "info")
+        return redirect(url_for('login'))
+
+    user_id = session['username']  # 세션에서 사용자 ID 가져오기
+    food_name = request.form['food_name']  # 폼 데이터에서 음식 이름 가져오기
+    print(user_id)
+    cursor = mysql.connection.cursor()
+    try:
+        # user_food_intake 테이블에 음식 이름 추가
+        insert_query = "INSERT INTO user_food_intake (user_id, food_name) VALUES (%s, %s)"
+        cursor.execute(insert_query, (user_id, food_name))
+        mysql.connection.commit()
+        flash("음식이 성공적으로 추가되었습니다.", "success")
+
+    except Exception as e:
+        mysql.connection.rollback()
+        flash("음식 추가에 실패하였습니다: " + str(e), "danger")
+    finally:
+        cursor.close()
+
+    return redirect(url_for('nutrition'))  # 성공적으로 추가 후 리디렉션할 페이지
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -126,6 +167,79 @@ def signup():
             cursor.close()  # 커서 닫기
 
     return render_template('signup.html')
+
+from datetime import datetime
+
+@app.route('/nutrition', methods=['GET', 'POST'])
+def nutrition():
+    if 'username' not in session:
+        # 사용자가 로그인하지 않았으면 로그인 페이지로 리디렉션
+        flash("로그인이 필요합니다.", "info")
+        return redirect(url_for('login'))
+
+    # 로그인된 사용자의 ID를 조회
+    username = session['username']
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+    # 기본적으로 오늘 날짜 선택, 사용자가 다른 날짜를 선택했을 때는 해당 날짜의 데이터를 가져옴
+    today_date = datetime.today().strftime('%Y-%m-%d')
+    selected_date = request.form.get('selected_date', today_date)
+    query = "SELECT * FROM user_food_intake WHERE user_id = %s AND DATE(created_at) = %s"
+    cursor.execute(query, (username, selected_date))
+    food_intakes = cursor.fetchall()
+
+    nutrient_totals = calculate_nutrient_totals(food_intakes, cursor)
+
+    cursor.close()
+
+    return render_template('nutrition.html', food_intakes=food_intakes, selected_date=selected_date, nutrient_totals=nutrient_totals)
+
+
+@app.route('/delete_food_intake', methods=['POST'])
+def delete_food_intake():
+    if 'loggedin' not in session:
+        return jsonify({'success': False, 'error': '로그인이 필요합니다.'}), 403
+
+    data = request.get_json()
+    intake_id = data.get('intake_id')
+    cursor = mysql.connection.cursor()
+    try:
+        cursor.execute('DELETE FROM user_food_intake WHERE id = %s', (intake_id,))
+        mysql.connection.commit()
+        return jsonify({'success': True}), 200
+    except Exception as e:
+        mysql.connection.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+    finally:
+        cursor.close()
+
+
+@app.route('/recommendation', methods=['GET', 'POST'])
+def recommendation():
+    if 'username' not in session:
+        flash("로그인이 필요합니다.", "info")
+        return redirect(url_for('login'))
+
+    username = session['username']
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    today_date = datetime.today().strftime('%Y-%m-%d')
+    selected_date = request.args.get('date', today_date)
+
+    query = """
+            SELECT SUM(food_info_2.kcal) AS kcal, SUM(food_info_2.carbohydrate) AS carbohydrate, SUM(food_info_2.protein) AS protein, SUM(food_info_2.fat) AS fat, SUM(food_info_2.sugars) AS sugars, SUM(food_info_2.salt) AS salt, SUM(food_info_2.coles) AS coles, SUM(food_info_2.mag) AS mag, SUM(food_info_2.calcium) AS calcium, SUM(food_info_2.iron) AS iron
+            FROM user_food_intake
+            JOIN food_info_2 ON user_food_intake.food_name = food_info_2.name
+            WHERE user_food_intake.user_id = %s AND DATE(user_food_intake.created_at) = %s
+            """
+    cursor.execute(query, (username, selected_date))
+    current_intake = cursor.fetchone()
+
+    # Map English keys to Korean for display in the template
+    if current_intake:
+        current_intake = {Config.nutrient_map[key]: value for key, value in current_intake.items() if key in Config.nutrient_map}
+
+    cursor.close()
+    return render_template('recommendation.html', date=selected_date, current_intake=current_intake)
 
 
 if __name__ == '__main__':
