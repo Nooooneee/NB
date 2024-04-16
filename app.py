@@ -1,12 +1,15 @@
+import copy
+
 from flask import Flask, flash, redirect, send_from_directory, url_for, render_template, session, request, jsonify
 from config import Config
 from flask_mysqldb import MySQL
-from utils import save_image, allowed_file, fc_load_model, predict_image, get_data_from_db, add_user_to_db, validate_login, calculate_nutrient_totals
+from utils import save_image, allowed_file, fc_load_model, predict_image, get_data_from_db, add_user_to_db, validate_login, calculate_nutrient_totals, get_current_intake, calculate_deficiencies, find_closest_food_with_nutrients
 import os
 import MySQLdb.cursors
 import pandas as pd
 import numpy as np
 import logging
+
 stream_handler = logging.StreamHandler()
 stream_handler.setLevel(logging.DEBUG)
 
@@ -213,7 +216,6 @@ def delete_food_intake():
     finally:
         cursor.close()
 
-
 @app.route('/recommendation', methods=['GET', 'POST'])
 def recommendation():
     if 'username' not in session:
@@ -222,24 +224,27 @@ def recommendation():
 
     username = session['username']
     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-    today_date = datetime.today().strftime('%Y-%m-%d')
-    selected_date = request.args.get('date', today_date)
 
-    query = """
-            SELECT SUM(food_info_2.kcal) AS kcal, SUM(food_info_2.carbohydrate) AS carbohydrate, SUM(food_info_2.protein) AS protein, SUM(food_info_2.fat) AS fat, SUM(food_info_2.sugars) AS sugars, SUM(food_info_2.salt) AS salt, SUM(food_info_2.coles) AS coles, SUM(food_info_2.mag) AS mag, SUM(food_info_2.calcium) AS calcium, SUM(food_info_2.iron) AS iron
-            FROM user_food_intake
-            JOIN food_info_2 ON user_food_intake.food_name = food_info_2.name
-            WHERE user_food_intake.user_id = %s AND DATE(user_food_intake.created_at) = %s
-            """
-    cursor.execute(query, (username, selected_date))
-    current_intake = cursor.fetchone()
+    # 사용자의 현재 섭취량 가져오기
+    current_intake = get_current_intake(username, cursor)
+    # 가장 부족한 영양소 계산
+    nutrient_deficiencies = calculate_deficiencies(current_intake, Config.RDA2)
 
-    # Map English keys to Korean for display in the template
-    if current_intake:
-        current_intake = {Config.nutrient_map[key]: value for key, value in current_intake.items() if key in Config.nutrient_map}
+    # 부족량에 가장 가까운 음식 찾기
+    closest_food, food_nutrients = find_closest_food_with_nutrients(nutrient_deficiencies, cursor)
 
+    cursor.execute("SELECT * FROM food_info_2 WHERE name = %s", (closest_food,))
+    food_nutrients = cursor.fetchone()
+    current_intake_origin = copy.copy(current_intake)
+    if food_nutrients:
+        # 영양분을 현재 섭취량에 더하기
+        for nutrient, value in food_nutrients.items():
+            if nutrient in current_intake and value is not None:
+                current_intake[nutrient] = current_intake.get(nutrient, 0) + value
+    print(current_intake_origin)
+    print(current_intake)
     cursor.close()
-    return render_template('recommendation.html', date=selected_date, current_intake=current_intake)
+    return render_template('recommendation.html', current_intake_origin=current_intake_origin, current_intake=current_intake, closest_food=closest_food, Config=Config)
 
 
 if __name__ == '__main__':

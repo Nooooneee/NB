@@ -7,6 +7,7 @@ import numpy as np
 from flask import flash
 from werkzeug.security import check_password_hash, generate_password_hash
 import MySQLdb
+from datetime import datetime
 
 
 def fc_load_model(model_path):
@@ -116,3 +117,80 @@ def calculate_nutrient_totals(food_intakes, cursor):
     for nutrient in nutrient_totals:
         nutrient['korean_name'] = nutrient_map[nutrient['name']]
     return nutrient_totals
+
+def get_current_intake(username, cursor):
+    today_date = datetime.today().strftime('%Y-%m-%d')
+    # 오늘 섭취한 모든 음식의 이름 가져오기
+    query = """
+            SELECT food_name FROM user_food_intake
+            WHERE user_id = %s AND DATE(created_at) = %s
+            """
+    cursor.execute(query, (username, today_date))
+    food_names = cursor.fetchall()
+
+    # 음식 이름이 있을 경우 해당 음식들의 영양소 합산
+    if food_names:
+        food_names = [food['food_name'] for food in food_names]  # 음식 이름 리스트 추출
+        food_names_tuple = tuple(food_names)  # SQL 쿼리 IN 절에 사용하기 위해 튜플 변환
+        nutrient_query = """
+                        SELECT 
+                            SUM(kcal) AS kcal, 
+                            SUM(carbohydrate) AS carbohydrate, 
+                            SUM(protein) AS protein, 
+                            SUM(fat) AS fat, 
+                            SUM(sugars) AS sugars, 
+                            SUM(salt) AS salt, 
+                            SUM(coles) AS coles, 
+                            SUM(mag) AS mag, 
+                            SUM(calcium) AS calcium, 
+                            SUM(iron) AS iron
+                        FROM food_info_2
+                        WHERE name IN %s
+                        """
+        cursor.execute(nutrient_query, (food_names_tuple,))
+        result = cursor.fetchone()
+        if result:
+            return {k: (v if v is not None else 0) for k, v in result.items()}
+        else:
+            return {'kcal': 0, 'carbohydrate': 0, 'protein': 0, 'fat': 0, 'sugars': 0,
+                    'salt': 0, 'coles': 0, 'mag': 0, 'calcium': 0, 'iron': 0}
+    else:
+        # 섭취한 음식이 없는 경우
+        return {'kcal': 0, 'carbohydrate': 0, 'protein': 0, 'fat': 0, 'sugars': 0,
+                'salt': 0, 'coles': 0, 'mag': 0, 'calcium': 0, 'iron': 0}
+
+
+def calculate_deficiencies(current_intake, RDAs):
+    deficiencies = {}
+    ratios = {}
+
+    # Calculate ratios of current intake to RDAs for each nutrient
+    for nutrient, value in current_intake.items():
+        if nutrient in RDAs and RDAs[nutrient] > 0:  # Avoid division by zero
+            ratio = value / RDAs[nutrient]
+            ratios[nutrient] = ratio
+
+            # Calculate deficiency if ratio is less than 1
+            if ratio < 1:
+                deficiencies[nutrient] = RDAs[nutrient] - value
+
+    # Find the nutrient with the lowest ratio
+    min_ratio_nutrient = min(ratios, key=ratios.get)
+
+    # Return a dictionary containing the nutrient with the lowest ratio as key
+    # and its deficiency as value
+    return {min_ratio_nutrient: deficiencies.get(min_ratio_nutrient, 0)}
+
+def find_closest_food_with_nutrients(deficiencies, cursor):
+    min_diff = float('inf')
+    closest_food = None
+    food_nutrients = {}
+    for nutrient, deficiency in deficiencies.items():
+        query = f"SELECT name, {nutrient}, ABS({nutrient} - %s) AS diff FROM food_info_2 ORDER BY diff ASC LIMIT 1"
+        cursor.execute(query, (deficiency,))
+        result = cursor.fetchone()
+        if result and result['diff'] < min_diff:
+            min_diff = result['diff']
+            closest_food = result['name']
+            food_nutrients = {nutrient: result[nutrient] for nutrient in deficiencies.keys()}  # 영양소 정보 저장
+    return closest_food, food_nutrients

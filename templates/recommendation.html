@@ -1,61 +1,82 @@
 {% extends 'base.html' %}
 
-{% block title %}영양소 추천{% endblock %}
+{% block title %}
+영양소 추천 결과
+{% endblock %}
 
 {% block head %}
-{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+
 <style>
-    .progress-bar-container {
-        background-color: #e0e0e0;
-        border-radius: 10px;
-        margin: 10px 0;
-        position: relative;
-    }
+    body {
+            padding-top: 10vh; /* 네비게이션 바 높이 만큼 여백 추가 */
+        }
     .progress-bar {
-        height: 20px;
-        border-radius: 10px;
-        position: relative;
+    height: 100%;
+    border-radius: 10px;
+    position: absolute;
+    left: 0;
+}
+    .progress-green {
+    background-color: #4caf50; /* 초록색 */
     }
-    .progress-bar.green {
-        background-color: #4caf50;
+    .progress-orange {
+        background-color: #ff9800; /* 주황색 */
     }
-    .progress-bar.orange {
-        background-color: #ff9800;
-    }
-    .progress-bar.red {
-        background-color: #f44336;
+    .progress-red {
+        background-color: #f44336; /* 빨간색 */
     }
     .progress-percentage {
         position: absolute;
-        right: 5px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: white;
+            font-size: 14px;
+            right: 21.2%;
+            transform: translateY(-10%);
+            color: black;
+            background: none;
     }
-    .nutrition-label {
-        font-weight: bold;
-        margin-bottom: 5px;
-    }
+    .progress-bar-area {
+    background-color: #e0e0e0;
+    border-radius: 10px;
+    height: 18px;
+    position: relative;
+    overflow: hidden;
+}
+    .progress-additional {
+    background-color: #ffff00; /* 노란색 바 */
+    height: 100%;
+    border-radius: 10px;
+    position: absolute;
+    left: 0;
+}
+
+.progress-label {
+    position: absolute;
+    top: 50%;
+    right: 5px;
+    transform: translateY(-50%);
+    z-index: 1;
+    color: black;
+}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container">
-    <h1>영양소 추천 결과</h1>
-    <h2>섭취한 영양소와 추천 음식의 영양소 합</h2>
-    {% for nutrient_name, value in zip(nutrient_names, current_intake.values()) %}
-        {% set rda_percent = (value / rda_values[loop.index0] * 100) | round %}
-        {% set bar_width = rda_percent if rda_percent <= 100 else 100 %}
+<h2>추천 음식: {{ closest_food }}</h2><br>
+<h6>가장 부족한 영양소를 채워줄 수 있는 음식이 추천됩니다.</h6><br>
+<div class="progress-container">
+    {% for nutrient, value in current_intake_origin.items() %}
+        {% set rda_value = Config.RDA2.get(nutrient, 1) %}
+        {% set rda_percent = (value / rda_value * 100) | round %}
+        {% set additional_percent = ((current_intake[nutrient] - value) / rda_value * 100) | round if nutrient in current_intake else 0 %}
         <div class="nutrition-item">
-            <div class="nutrition-label">{{ nutrient_name }}</div>
-            <div class="progress-bar-container">
+            <label>{{ Config.nutrient_map.get(nutrient, nutrient) }}</label>
+            <div class="progress-bar-area">
                 <div class="progress-bar
-                    {{ 'red' if rda_percent > 150 else
-                    'orange' if rda_percent > 100 else
-                    'green' }}"
-                    style="width: {{ bar_width }}%;">
-                    <span class="progress-percentage">{{ rda_percent }}%</span>
-                </div>
+                    {{ 'progress-red' if rda_percent > 120 else
+                       'progress-green' if 80 <= rda_percent <= 120 else
+                       'progress-orange' }}" style="width: {{ rda_percent if rda_percent <= 100 else 100 }}%;"></div>
+                <div class="progress-additional" style="width: {{ additional_percent if rda_percent + additional_percent <= 100 else 100 - rda_percent }}%; left: {{ rda_percent }}%;"></div>
+                <span class="progress-label">{{ rda_percent }}% + {{ additional_percent }}%</span>
             </div>
         </div>
     {% endfor %}
