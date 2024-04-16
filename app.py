@@ -42,7 +42,6 @@ def search():
             data_dict = data[0]  # 데이터가 있으면 첫 번째 결과를 사용
             return render_template('search_result.html', data=data_dict, RDA=Config.RDA)
         else:
-            flash('검색된 음식이 없습니다.', 'warning')
             return redirect(url_for('search'))
     return render_template('search.html')
 
@@ -90,7 +89,6 @@ def upload_file():
 def add_food():
     if 'loggedin' not in session:
         # 사용자가 로그인하지 않은 경우 로그인 페이지로 리디렉션
-        flash("로그인이 필요한 기능입니다.", "info")
         return redirect(url_for('login'))
 
     user_id = session['username']  # 세션에서 사용자 ID 가져오기
@@ -102,14 +100,11 @@ def add_food():
         insert_query = "INSERT INTO user_food_intake (user_id, food_name) VALUES (%s, %s)"
         cursor.execute(insert_query, (user_id, food_name))
         mysql.connection.commit()
-        flash("음식이 성공적으로 추가되었습니다.", "success")
 
     except Exception as e:
         mysql.connection.rollback()
-        flash("음식 추가에 실패하였습니다: " + str(e), "danger")
     finally:
         cursor.close()
-
     return redirect(url_for('nutrition'))  # 성공적으로 추가 후 리디렉션할 페이지
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -132,8 +127,7 @@ def login():
 def logout():
     session.pop('loggedin', None)
     session.pop('username', None)
-    flash('성공적으로 로그아웃하였습니다.', 'success')
-    return redirect(url_for('login'))
+    return redirect(url_for('home'))
 
 
 @app.route('/signup', methods=['GET', 'POST'])
@@ -154,16 +148,13 @@ def signup():
 
             if success:
                 mysql.connection.commit()  # 변경사항 저장
-                flash('회원가입이 성공적으로 완료되었습니다.', 'success')
                 return redirect(url_for('login'))
             else:
                 mysql.connection.rollback()  # 오류 발생 시 변경사항 롤백
-                flash('회원가입에 실패했습니다. 다시 시도해주세요.', 'danger')
                 return redirect(url_for('signup'))
 
         except Exception as e:
             mysql.connection.rollback()  # 오류 발생 시 변경사항 롤백
-            flash(f'오류 발생: {str(e)}', 'danger')
             return redirect(url_for('signup'))
 
         finally:
@@ -177,7 +168,6 @@ from datetime import datetime
 def nutrition():
     if 'username' not in session:
         # 사용자가 로그인하지 않았으면 로그인 페이지로 리디렉션
-        flash("로그인이 필요합니다.", "info")
         return redirect(url_for('login'))
 
     # 로그인된 사용자의 ID를 조회
@@ -219,7 +209,6 @@ def delete_food_intake():
 @app.route('/recommendation', methods=['GET', 'POST'])
 def recommendation():
     if 'username' not in session:
-        flash("로그인이 필요합니다.", "info")
         return redirect(url_for('login'))
 
     username = session['username']
