@@ -118,7 +118,7 @@ def login():
         if account:
             session['loggedin'] = True
             session['username'] = account['username']
-            return redirect('/upload')
+            return redirect('/')
         else:
             flash('로그인 실패: 사용자 이름이나 비밀번호가 잘못되었습니다.', 'danger')
     return render_template('login.html')

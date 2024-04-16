@@ -10,7 +10,7 @@ class Config:
     MYSQL_HOST = 'localhost'
     MYSQL_USER = 'root'
     MYSQL_PASSWORD = '1234'
-    MYSQL_DB = 'food_info'
+    MYSQL_DB = 'food'
     MYSQL_CURSORCLASS = 'DictCursor'
 
     category = {0: ['가지나물무침', '가지나물무침'], 1: ['간장게장', '간장게장'], 2: ['갈비탕', '갈비탕'], 3: ['갈치조림', '갈치조림'],
