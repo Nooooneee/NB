@@ -66,6 +66,12 @@
         </div>
         <button type="submit">로그인</button>
     </form>
+    <div style="text-align: center;">
+        <br>
+        <button onclick="window.location.href='/signup'" style="width: 200px; background-color: white; color: gray;">회원가입</button>
+    </div>
+
+
     {% for message in get_flashed_messages(category_filter=["success", "danger"]) %}
     <p>{{ message }}</p>
     {% endfor %}

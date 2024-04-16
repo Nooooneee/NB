@@ -50,7 +50,7 @@ def search():
 def autocomplete():
     search = request.args.get('term')
     cursor = mysql.connection.cursor()
-    query = f"SELECT name FROM food_info_2 WHERE name LIKE '%{search}%' LIMIT 5"
+    query = f"SELECT name FROM food_info_2 WHERE name LIKE '%{search}%' LIMIT 30"
     cursor.execute(query)
     results = cursor.fetchall()
     suggestions = [result['name'] for result in results]
