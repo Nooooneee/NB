@@ -58,6 +58,49 @@
         text-align: center;
         color: #dc3545; /* 메시지 색상 설정 */
     }
+    .modal-content {
+    background-color: #f4f4f4; /* 폼 배경색 */
+    border-radius: 5px; /* 모달의 둥근 테두리 */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* 그림자 효과 */
+    padding: 20px; /* 모달 내부 패딩 */
+}
+
+.modal-header, .modal-footer {
+    border-bottom: 1px solid #ddd; /* 헤더와 푸터의 구분선 */
+    background-color: #fff; /* 헤더와 푸터 배경색 */
+}
+
+.modal-title {
+    color: #333; /* 제목 색상 */
+    text-align: center; /* 제목 가운데 정렬 */
+    margin-bottom: 20px; /* 제목과 내용 사이의 간격 */
+}
+
+.form-group {
+    margin-bottom: 20px; /* 폼 그룹 간격 */
+}
+
+input[type="text"] {
+    width: 100%; /* 텍스트 입력 필드 너비 */
+    padding: 8px; /* 텍스트 입력 필드 패딩 */
+    border: 1px solid #ccc; /* 테두리 */
+    border-radius: 4px; /* 둥근 테두리 */
+}
+
+.center-button {
+    display: block; /* 블록 요소로 만들기 */
+    width: 50%; /* 너비 */
+    margin: 0 auto; /* 자동 마진으로 가운데 정렬 */
+    padding: 10px 0; /* 패딩 */
+    background-color: #4CAF50; /* 버튼 색상 */
+    color: white; /* 텍스트 색상 */
+    border-radius: 4px; /* 둥근 테두리 */
+    cursor: pointer; /* 포인터 커서 */
+}
+
+.center-button:hover {
+    background-color: #45a049; /* 호버 시 버튼 색상 변경 */
+}
 </style>
 {% endblock %}
 
@@ -71,5 +114,67 @@
                 <input type="submit" value="업로드">
             </div>
         </form>
+        <!-- Modal -->
+        <div class="modal fade" id="inputModal" tabindex="-1" role="dialog" aria-labelledby="inputModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="inputModalLabel">아직 학습하지 않은 음식입니다.<br>학습을 위해 음식의 이름을 알려주세요.</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <input type="text" class="form-control" id="foodName" name="foodName" required>
+                </div>
+                <button type="button" class="btn btn-primary center-button" id="submitFoodBtn">제출</button>
+            </div>
+        </div>
     </div>
+</div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // 변수를 템플릿에서 직접 받아 사용
+    var openModal = "{{ open_modal }}";
+    if (openModal === "True") {
+        $('#inputModal').modal('show');
+    }
+
+    $('#submitFoodBtn').click(function() {
+        var foodName = $('#foodName').val();
+        if (!foodName) {
+            alert('음식 이름을 입력해주세요.');
+            return;
+        }
+
+        $.ajax({
+            url: "{{ url_for('handle_food_submission') }}",
+            type: 'POST',
+            data: { food_name: foodName },
+            success: function(response) {
+                if (response.success) {
+                    alert('파일 저장 성공');
+                    // 성공적으로 처리된 후에 리디렉션
+                    window.setTimeout(function() {
+                        window.location.href = "{{ url_for('upload_file') }}"; // 업로드 페이지로 리디렉션
+                    }); // 2초 후에 리디렉션
+                } else {
+                    alert('에러: ' + response.error);
+                }
+            },
+            error: function(xhr, status, error) {
+                alert('서버 에러: ' + error);
+            }
+        });
+    });
+});
+</script>
+
+
+
 {% endblock %}

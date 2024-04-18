@@ -9,6 +9,7 @@ import MySQLdb.cursors
 import pandas as pd
 import numpy as np
 import logging
+import shutil
 
 stream_handler = logging.StreamHandler()
 stream_handler.setLevel(logging.DEBUG)
@@ -62,6 +63,7 @@ def autocomplete():
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
+
 @app.route('/upload', methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'POST':
@@ -69,6 +71,7 @@ def upload_file():
         if file and allowed_file(file.filename, app.config['ALLOWED_EXTENSIONS']):
             filename = save_image(file, app.config['UPLOAD_FOLDER'], app.config['ALLOWED_EXTENSIONS'], app.config['SPECIFIC_IMAGE_SIZE'])
             if filename:
+                session['uploaded_filename'] = filename  # 세션에 파일명 저장
                 file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 image_size = os.path.getsize(file_path)
                 image_url = url_for('static', filename='uploads/' + filename)
@@ -77,6 +80,9 @@ def upload_file():
                 prediction = Config.category[prediction][1]
                 data = get_data_from_db(prediction, mysql)
                 data_dict = data[0] if data else {}
+                if not data_dict:  # 데이터가 비어있을 경우
+                    print('여기들어옴')
+                    return render_template('upload_form.html', open_modal=True)  # 모달 열기
                 return render_template('image_display.html', prediction=prediction, image_url=image_url, filename=filename, image_size=image_size, data=data_dict, RDA=Config.RDA)
             else:
                 flash(f'Image must be exactly {app.config["SPECIFIC_IMAGE_SIZE"][0]}x{app.config["SPECIFIC_IMAGE_SIZE"][1]} pixels')
@@ -84,6 +90,25 @@ def upload_file():
             flash('Invalid file or file type')
         return redirect('/upload')
     return render_template('upload_form.html')
+@app.route('/handle_food_submission', methods=['POST'])
+def handle_food_submission():
+    folder_name = request.form['food_name']
+    filename = session.pop('uploaded_filename', None)  # 세션에서 파일명 가져오기
+    print(folder_name)
+    print(filename)
+    if filename and folder_name:
+        source_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        target_folder = os.path.join(app.config['OTHER_FOLDER'], folder_name)
+        print(source_path)
+        print(target_folder)
+        if not os.path.exists(target_folder):
+            os.makedirs(target_folder)
+        target_path = os.path.join(target_folder, filename)
+        shutil.move(source_path, target_path)
+        return jsonify(success=True)
+
+    return jsonify(success=False, error="필요한 데이터가 누락되었습니다.")
+
 
 @app.route('/add_food', methods=['POST'])
 def add_food():

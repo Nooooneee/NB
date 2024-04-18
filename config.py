@@ -3,6 +3,7 @@ import os
 class Config:
     MODEL_PATH = './best_model1.h5'  # 모델 파일 경로
     UPLOAD_FOLDER = './static/uploads'
+    OTHER_FOLDER = './static/'
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
     SPECIFIC_IMAGE_SIZE = (1080, 1080)  # 요구되는 정확한 이미지 크기 (너비, 높이)
     SECRET_KEY = 'super secret key'
@@ -10,7 +11,7 @@ class Config:
     MYSQL_HOST = 'localhost'
     MYSQL_USER = 'root'
     MYSQL_PASSWORD = '1234'
-    MYSQL_DB = 'food'
+    MYSQL_DB = 'food_info'
     MYSQL_CURSORCLASS = 'DictCursor'
 
     category = {0: ['가지나물무침', '가지나물무침'], 1: ['간장게장', '간장게장'], 2: ['갈비탕', '갈비탕'], 3: ['갈치조림', '갈치조림'],
