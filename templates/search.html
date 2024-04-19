@@ -9,21 +9,36 @@ Food Search
 <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
 <style>
     body {
-        padding-top: 25vh; /* 네비게이션 바 높이 만큼 여백 추가 */
+        padding-top: 20vh; /* 네비게이션 바 높이 만큼 여백 추가 */
     }
-.centered-image {
+    .centered-image {
         display: block;
         margin: 0 auto;
         margin-left: -100px; /* 이미지를 왼쪽으로 20px 이동 */
         width: 800px; /* 이미지의 너비를 200px로 조정 */
-        height: auto; /* 높이를 자동으로 조정하여 비율 유지 */
+        height: auto; /* 높이를 자동으로 조절하여 비율 유지 */
     }
-    /* 검색 바의 크기를 조정하는 스타일 */
     #search-bar {
-        width: 600px; /* 원하는 너비로 조절 */
+        width: 70%; /* 검색 바 너비를 70%로 조절 */
         height: 60px; /* 원하는 높이로 조절 */
         font-size: 25px; /* 글꼴 크기 조절 */
     }
+    .form-inline {
+        display: flex;
+        align-items: center; /* 세로 중앙 정렬 */
+        width: 100%; /* 폼의 너비를 100%로 설정 */
+    }
+    .btn-primary {
+        padding: 12px 20px; /* 버튼 패딩 조정 */
+    }
+.ui-autocomplete {
+    max-height: 200px; /* 최대 높이 설정 */
+    overflow-y: auto; /* 세로 스크롤바 활성화 */
+    overflow-x: hidden; /* 가로 스크롤바 비활성화 */
+    border: 1px solid #ccc; /* 경계선 스타일 */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* 그림자 효과 */
+    width: 20%; /* 자동완성 드롭다운의 너비를 검색바와 동일하게 설정 */
+}
 
 </style>
 
@@ -32,12 +47,12 @@ Food Search
 {% block content %}
 <div class="container mt-5">
     <div class="row justify-content-center">
-        <div class="col-md-6">
+        <div class="col-md-8"> <!-- col-md-6에서 col-md-8로 변경 -->
             <img src="../static/image/logo_search.jpg" alt="음식 검색" class="centered-image">
-             <form action="{{ url_for('search') }}" method="post">
-                <input type="text" id="search-bar" name="food_name" class="form-control" placeholder="음식을 검색하세요..." required>
-                <button type="submit" class="btn btn-primary mt-2">검색</button>
-             </form>
+            <form action="{{ url_for('search') }}" method="post" class="form-inline mt-3">
+                <input type="text" id="search-bar" name="food_name" class="form-control mr-2" placeholder="음식을 검색하세요..." required>
+                <button type="submit" class="btn btn-primary">검색</button>
+            </form>
         </div>
     </div>
 </div>
